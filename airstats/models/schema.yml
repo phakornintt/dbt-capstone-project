@@ -1,0 +1,62 @@
+models:
+  - name: silver_airports
+    columns:
+      - name: airport_ident
+        description: "{{ doc('airport_ident') }}"
+        data_tests:
+          - unique
+          - not_null
+      - name: airport_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['small_airport', 'heliport', 'closed', 'seaplane_base', 'balloonport', 'medium_airport', 'large_airport']
+      - name: airport_lat
+        data_tests:
+          - dbt_expectations.expect_column_max_to_be_between:
+              arguments:
+                max_value: 90
+          - dbt_expectations.expect_column_min_to_be_between:
+              arguments:
+                min_value: -89
+      - name: airport_long
+  - name: silver_runways
+    columns:
+      - name: runway_id
+        data_tests:
+          - unique
+          - not_null
+      - name: airport_ident
+        data_tests:
+          - relationships:
+              config:
+                severity: warn
+              arguments:
+                to: ref('silver_airports')
+                field: airport_ident
+      - name: runway_length_ft
+        data_tests:
+          - dbt_expectations.expect_column_max_to_be_between:
+              arguments:
+                min_value: 10
+                max_value: 100
+          - positive_values
+  - name: silver_airport_comments
+    columns:
+      - name: comment_id
+        data_tests:
+          - unique
+          - not_null
+      - name: airport_ident
+        data_tests:
+          - relationships:
+              config: 
+                severity: warn
+              arguments:
+                to: ref('silver_airports')
+                field: airport_ident
+      - name: comment_timestamp
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              arguments:
+                column_type: timestamp
